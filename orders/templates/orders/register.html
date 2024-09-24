@@ -1,0 +1,44 @@
+<!-- orders/templates/orders/register.html -->
+{% extends 'orders/base.html' %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+    <h2>Register</h2>
+    <form method="post">
+        {% csrf_token %}
+
+
+
+        <label>Password:</label><br>
+        <input type="password" name="password" required><br>
+
+        <label>Confirm Password:</label><br>
+        <input type="password" name="password_confirm" required><br>
+
+        <label>First Name:</label><br>
+        <input type="text" name="first_name" required><br>
+
+        <label>Last Name:</label><br>
+        <input type="text" name="last_name" required><br>
+
+        <label>Birthdate:</label><br>
+>
+        <input type="date" name="birthdate" required><br>
+
+        <label>Phone Number:</label><br>
+        <input type="text" name="phone_number" required><br>
+
+        <label>Address:</label><br>
+        <textarea name="address" required></textarea><br>
+
+        <label>Gender:</label><br>
+        <select name="gender" required>
+            <option value="">Select Gender</option>
+            <option value="M">Male</option>
+            <option value="F">Female</option>
+        </select><br><br>
+
+        <button type="submit">Register</button>
+    </form>
+{% endblock %}

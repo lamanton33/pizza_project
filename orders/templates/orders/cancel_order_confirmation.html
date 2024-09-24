@@ -1,0 +1,10 @@
+<!-- orders/templates/orders/cancel_order_confirmation.html -->
+{% extends 'orders/base.html' %}
+
+{% block title %}Cancel Order{% endblock %}
+
+{% block content %}
+    <h2>Cancel Order</h2>
+    <p>Your order has been cancelled successfully.</p>
+    <p><a href="{% url 'order_history' %}">Back to Order History</a></p>
+{% endblock %}

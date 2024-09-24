@@ -1,0 +1,22 @@
+<!-- orders/templates/orders/order_confirmation.html -->
+{% extends 'orders/base.html' %}
+
+{% block title %}Order Confirmation{% endblock %}
+
+{% block content %}
+    <h2>Order Confirmation</h2>
+    <p>Thank you for your order!</p>
+    <p>Order Number: {{ order.id }}</p>
+    <p>Estimated Delivery Time: {{ order.estimated_delivery_time|date:"Y-m-d H:i" }}</p>
+
+    <h3>Order Details:</h3>
+    <ul>
+        {% for item in order.items.all %}
+            <li>{{ item.quantity }} x {{ item.item.name }} - ${{ item.get_total_price|floatformat:2 }}</li>
+        {% endfor %}
+    </ul>
+
+    <p>Total Before Discounts: ${{ order.get_total_before_discounts|floatformat:2 }}</p>
+    <p>Discount Applied: ${{ order.discount_applied|floatformat:2 }}</p>
+    <p><strong>Total Price: ${{ total_price|floatformat:2 }}</strong></p>
+{% endblock %}

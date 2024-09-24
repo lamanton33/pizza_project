@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -122,3 +123,9 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Authentication Settings
+LOGIN_URL = '/login/'  # Redirects to the custom login page
+LOGIN_REDIRECT_URL = '/place_order/'  # Redirects here after successful login
+LOGOUT_REDIRECT_URL = '/'  # Redirects to home after logout
+

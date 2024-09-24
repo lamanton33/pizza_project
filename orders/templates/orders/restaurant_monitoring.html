@@ -1,0 +1,24 @@
+<!-- orders/templates/orders/restaurant_monitoring.html -->
+{% extends 'orders/base.html' %}
+
+{% block title %}Restaurant Monitoring{% endblock %}
+
+{% block content %}
+    <h2>Restaurant Monitoring</h2>
+    {% if orders %}
+        <ul>
+            {% for order in orders %}
+                <li>
+                    <strong>Order #{{ order.id }}</strong> - {{ order.date|date:"Y-m-d H:i" }} - Status: {{ order.get_status_display }}
+                    <ul>
+                        {% for item in order.items.all %}
+                            <li>{{ item.quantity }} x {{ item.item.name }}</li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No orders currently being prepared or in process.</p>
+    {% endif %}
+{% endblock %}

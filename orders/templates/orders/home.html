@@ -1,0 +1,14 @@
+<!-- orders/templates/orders/home.html -->
+{% extends 'orders/base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    <h2>Welcome to the Pizza Ordering System!</h2>
+    {% if user.is_authenticated %}
+        <p>Hello, {{ user.first_name }}!</p>
+        <p><a href="{% url 'place_order' %}">Place a new order</a></p>
+    {% else %}
+        <p>Please <a href="{% url 'login' %}">login</a> or <a href="{% url 'register' %}">register</a>.</p>
+    {% endif %}
+{% endblock %}

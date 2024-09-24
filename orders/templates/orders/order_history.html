@@ -1,0 +1,28 @@
+<!-- orders/templates/orders/order_history.html -->
+{% extends 'orders/base.html' %}
+
+{% block title %}Order History{% endblock %}
+
+{% block content %}
+    <h2>Your Order History</h2>
+    {% if orders %}
+        <ul>
+            {% for order in orders %}
+                <li>
+                    <strong>Order #{{ order.id }}</strong> - {{ order.date|date:"Y-m-d H:i" }} - Status: {{ order.get_status_display }}
+                    <ul>
+                        {% for item in order.items.all %}
+                            <li>{{ item.quantity }} x {{ item.item.name }} - ${{ item.get_total_price|floatformat:2 }}</li>
+                        {% endfor %}
+                    </ul>
+                    <p>Total: ${{ order.get_total_price|floatformat:2 }}</p>
+                    {% if order.can_cancel %}
+                        <a href="{% url 'cancel_order' order_id=order.id %}">Cancel Order</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>You have not placed any orders yet.</p>
+    {% endif %}
+{% endblock %}

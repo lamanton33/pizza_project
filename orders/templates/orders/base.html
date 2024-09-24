@@ -1,0 +1,53 @@
+<!-- orders/templates/orders/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Pizza Ordering System{% endblock %}</title>
+    {% load static %}
+    <!-- Include CSS files -->
+    <link rel="stylesheet" href="{% static 'orders/css/styles.css' %}">
+</head>
+<body>
+    <header>
+        <h1>Pizza Ordering System</h1>
+        <nav>
+            <ul>
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'place_order' %}">Place Order</a></li>
+                    <li><a href="{% url 'order_history' %}">Order History</a></li>
+                    {% if user.is_staff %}
+                        <li><a href="{% url 'restaurant_monitoring' %}">Monitoring</a></li>
+                        <li><a href="{% url 'earnings_report' %}">Earnings Report</a></li>
+                    {% endif %}
+                {% else %}
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'login' %}">Login</a></li>
+                    <li><a href="{% url 'register' %}">Register</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Pizza Ordering System</p>
+    </footer>
+
+    <!-- Include JS files -->
+    <script src="{% static 'orders/js/scripts.js' %}"></script>
+</body>
+</html>
+    

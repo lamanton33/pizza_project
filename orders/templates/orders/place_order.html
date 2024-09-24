@@ -1,0 +1,39 @@
+<!-- orders/templates/orders/place_order.html -->
+{% extends 'orders/base.html' %}
+
+{% block title %}Place Order{% endblock %}
+
+{% block content %}
+    <h2>Place Order</h2>
+    <form method="post">
+        {% csrf_token %}
+        <h3>Select Pizzas:</h3>
+        {% for pizza in pizzas %}
+            <input type="checkbox" name="pizzas" value="{{ pizza.id }}" id="pizza_{{ pizza.id }}">
+            <label for="pizza_{{ pizza.id }}">{{ pizza.name }} - ${{ pizza.calculate_price|floatformat:2 }}</label><br>
+        {% empty %}
+            <p>No pizzas available.</p>
+        {% endfor %}
+
+        <h3>Select Drinks:</h3>
+        {% for drink in drinks %}
+            <input type="checkbox" name="drinks" value="{{ drink.id }}" id="drink_{{ drink.id }}">
+            <label for="drink_{{ drink.id }}">{{ drink.name }} - ${{ drink.price|floatformat:2 }}</label><br>
+        {% empty %}
+            <p>No drinks available.</p>
+        {% endfor %}
+
+        <h3>Select Desserts:</h3>
+        {% for dessert in desserts %}
+            <input type="checkbox" name="desserts" value="{{ dessert.id }}" id="dessert_{{ dessert.id }}">
+            <label for="dessert_{{ dessert.id }}">{{ dessert.name }} - ${{ dessert.price|floatformat:2 }}</label><br>
+        {% empty %}
+            <p>No desserts available.</p>
+        {% endfor %}
+
+        <h3>Discount Code:</h3>
+        <input type="text" name="discount_code" placeholder="Enter your discount code"><br><br>
+
+        <button type="submit">Place Order</button>
+    </form>
+{% endblock %}
