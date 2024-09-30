@@ -14,6 +14,185 @@ from .models import (
     Customer, Pizza, Ingredient, Order, OrderItem,
     DiscountCode, Drink, Dessert, DeliveryPerson, PostalCode, EarningsReport
 )
+class DeliveryLogicTests(TestCase):
+    def setUp(self):
+        # Create postal codes
+        self.postal_code_1 = PostalCode.objects.create(code='12345')
+        self.postal_code_2 = PostalCode.objects.create(code='67890')
+
+        # Create delivery persons
+        self.delivery_person_1 = DeliveryPerson.objects.create(
+            user=User.objects.create_user(username='delivery1', password='pass'),
+        )
+        self.delivery_person_1.assigned_postal_codes.add(self.postal_code_1)
+
+        self.delivery_person_2 = DeliveryPerson.objects.create(
+            user=User.objects.create_user(username='delivery2', password='pass'),
+        )
+        self.delivery_person_2.assigned_postal_codes.add(self.postal_code_1)
+
+        self.delivery_person_3 = DeliveryPerson.objects.create(
+            user=User.objects.create_user(username='delivery3', password='pass'),
+        )
+        self.delivery_person_3.assigned_postal_codes.add(self.postal_code_2)
+
+        # Create customers
+        self.customer_1 = Customer.objects.create(
+            user=User.objects.create_user(username='customer1', password='pass'),
+            birthdate=date(1990, 1, 1),
+            phone_number='1234567890',
+            address='Address 1',
+            gender='M',
+            postal_code=self.postal_code_1
+        )
+        self.customer_2 = Customer.objects.create(
+            user=User.objects.create_user(username='customer2', password='pass'),
+            birthdate=date(1990, 1, 1),
+            phone_number='0987654321',
+            address='Address 2',
+            gender='F',
+            postal_code=self.postal_code_1
+        )
+        self.customer_3 = Customer.objects.create(
+            user=User.objects.create_user(username='customer3', password='pass'),
+            birthdate=date(1990, 1, 1),
+            phone_number='1112223333',
+            address='Address 3',
+            gender='M',
+            postal_code=self.postal_code_2
+        )
+
+        # Create a pizza for orders
+        self.tomato_sauce = Ingredient.objects.create(
+            name='Tomato Sauce',
+            cost=Decimal('0.50'),
+            is_vegan=True,
+            is_vegetarian=True
+        )
+        self.cheese = Ingredient.objects.create(
+            name='Cheese',
+            cost=Decimal('1.00'),
+            is_vegan=False,
+            is_vegetarian=True
+        )
+        self.pizza = Pizza.objects.create(name='Cheese Pizza')
+        self.pizza.ingredients.add(self.tomato_sauce, self.cheese)
+
+    def test_assign_delivery_person_based_on_postal_code(self):
+        # Create an order for customer_1
+        order = Order.objects.create(customer=self.customer_1)
+        OrderItem.objects.create(
+            order=order,
+            content_type=ContentType.objects.get_for_model(Pizza),
+            object_id=self.pizza.id,
+            quantity=1
+        )
+        # Assign delivery person
+        delivery_person = order.assign_delivery_person()
+        self.assertIn(delivery_person, [self.delivery_person_1, self.delivery_person_2])
+        self.assertIn(self.postal_code_1, delivery_person.assigned_postal_codes.all())
+
+    def test_delivery_person_unavailable_after_delivery(self):
+        # Create an order for customer_1
+        order = Order.objects.create(customer=self.customer_1)
+        OrderItem.objects.create(
+            order=order,
+            content_type=ContentType.objects.get_for_model(Pizza),
+            object_id=self.pizza.id,
+            quantity=1
+        )
+        # Assign delivery person
+        delivery_person = order.assign_delivery_person()
+        # Mark delivery person as unavailable
+        delivery_person.mark_unavailable()
+        self.assertFalse(delivery_person.is_available())
+        # Try to assign the same delivery person to another order
+        order2 = Order.objects.create(customer=self.customer_1)
+        OrderItem.objects.create(
+            order=order2,
+            content_type=ContentType.objects.get_for_model(Pizza),
+            object_id=self.pizza.id,
+            quantity=1
+        )
+        delivery_person2 = order2.assign_delivery_person()
+        self.assertNotEqual(delivery_person, delivery_person2)
+
+    def test_group_orders_within_time_window(self):
+        # Create multiple orders within 3 minutes
+        order1 = Order.objects.create(customer=self.customer_1)
+        OrderItem.objects.create(
+            order=order1,
+            content_type=ContentType.objects.get_for_model(Pizza),
+            object_id=self.pizza.id,
+            quantity=1
+        )
+        order2 = Order.objects.create(customer=self.customer_2)
+        OrderItem.objects.create(
+            order=order2,
+            content_type=ContentType.objects.get_for_model(Pizza),
+            object_id=self.pizza.id,
+            quantity=1
+        )
+        # Adjust order times to be within 3 minutes
+        order2.date = order1.date + timedelta(minutes=2)
+        order2.save()
+
+        # Assign delivery person to order1
+        delivery_person1 = order1.assign_delivery_person()
+        # Group order2 with order1
+        delivery_person2 = order2.assign_delivery_person()
+        self.assertEqual(delivery_person1, delivery_person2)
+
+    def test_maximum_batch_size(self):
+        # Create multiple orders
+        order1 = Order.objects.create(customer=self.customer_1)
+        OrderItem.objects.create(
+            order=order1,
+            content_type=ContentType.objects.get_for_model(Pizza),
+            object_id=self.pizza.id,
+            quantity=1
+        )
+        order2 = Order.objects.create(customer=self.customer_2)
+        OrderItem.objects.create(
+            order=order2,
+            content_type=ContentType.objects.get_for_model(Pizza),
+            object_id=self.pizza.id,
+            quantity=1
+        )
+        order3 = Order.objects.create(customer=self.customer_1)
+        OrderItem.objects.create(
+            order=order3,
+            content_type=ContentType.objects.get_for_model(Pizza),
+            object_id=self.pizza.id,
+            quantity=1
+        )
+        order4 = Order.objects.create(customer=self.customer_2)
+        OrderItem.objects.create(
+            order=order4,
+            content_type=ContentType.objects.get_for_model(Pizza),
+            object_id=self.pizza.id,
+            quantity=1
+        )
+        # Adjust order times to be within 3 minutes
+        order2.date = order1.date + timedelta(minutes=2)
+        order2.save()
+        order3.date = order1.date + timedelta(minutes=3)
+        order3.save()
+        order4.date = order1.date + timedelta(minutes=4)
+        order4.save()
+
+        # Assign delivery person to orders
+        delivery_person1 = order1.assign_delivery_person()
+        delivery_person2 = order2.assign_delivery_person()
+        delivery_person3 = order3.assign_delivery_person()
+        delivery_person4 = order4.assign_delivery_person()
+
+        # First three orders should be grouped
+        self.assertEqual(delivery_person1, delivery_person2)
+        self.assertEqual(delivery_person1, delivery_person3)
+        # Fourth order should not be grouped due to max batch size
+        self.assertNotEqual(delivery_person1, delivery_person4)
+
 
 class CustomerModelTests(TestCase):
     def setUp(self):
