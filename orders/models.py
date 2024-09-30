@@ -14,6 +14,7 @@ class Customer(models.Model):
     birthdate = models.DateField()
     phone_number = models.CharField(max_length=15)
     address = models.TextField()
+    postal_code = models.ForeignKey('PostalCode', on_delete=models.SET_NULL, null=True, blank=True)
     gender = models.CharField(max_length=1, choices=[('M', 'Male'), ('F', 'Female')], null=True)
     total_pizzas_ordered = models.PositiveIntegerField(default=0)
     birthday_reward_redeemed = models.BooleanField(default=False)
@@ -62,13 +63,21 @@ class DeliveryPerson(models.Model):
     name = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=15)
     assigned_postal_code = models.ForeignKey('PostalCode', on_delete=models.SET_NULL, null=True, blank=True)
+    unavailable_until = models.DateTimeField(null=True, blank=True)
+
+    def mark_unavailable(self):
+        self.unavailable_until = timezone.now() + timedelta(minutes=30)
+        self.save()
 
     def is_available(self):
-        # Check if 30 minutes have passed since their last delivery
-        latest_order = self.order_set.filter(status='D').order_by('-estimated_delivery_time').first()
-        if latest_order and latest_order.estimated_delivery_time > timezone.now() - timedelta(minutes=30):
-            return False
-        return True
+        if self.unavailable_until is None:
+            return True
+        if timezone.now() >= self.unavailable_until:
+            # Reset availability
+            self.unavailable_until = None
+            self.save()
+            return True
+        return False
 
     def __str__(self):
         return self.name
@@ -169,6 +178,7 @@ class Order(models.Model):
         return total_before_discounts
     
 
+
     def apply_discount(self):
         total_before_discounts = self.get_total_before_discounts()
         discount_amount = Decimal('0.00')
@@ -197,6 +207,26 @@ class Order(models.Model):
         total_before_discounts= self.get_total_before_discounts()
         return total_before_discounts - self.discount_applied  # Subtract any discounts applied
 
+    def assign_delivery_person(self):
+        # Retrieve available delivery persons for the customer's postal code
+        available_delivery_persons = DeliveryPerson.objects.filter(
+            assigned_postal_code=self.customer.postal_code,
+            unavailable_until__isnull=True  # Only available persons
+        )
+
+        if not available_delivery_persons.exists():
+            # Handle the case where no delivery persons are available
+            raise ValidationError("No delivery persons are currently available for this area.")
+
+        # Assign the first available delivery person
+        self.delivery_person = available_delivery_persons.first()
+        self.save()
+
+        # Mark the assigned delivery person as unavailable for 30 minutes
+        self.delivery_person.mark_unavailable()
+        
+        return self.delivery_person
+    
     def clean(self):
         if not any(isinstance(item.item, Pizza) for item in self.items.all()):
             raise ValidationError('Each order must include at least one pizza.')
