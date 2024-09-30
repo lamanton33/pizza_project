@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .models import Customer, Pizza, Drink, Dessert, Order, OrderItem, DiscountCode, EarningsReport
+from .models import Customer, Pizza, Drink, Dessert, Order, OrderItem, DiscountCode, EarningsReport, PostalCode
 from django.contrib.auth.models import User
 from django.http import HttpResponse
 from django.contrib import messages
@@ -11,45 +11,61 @@ from django.core.exceptions import ValidationError
 from django.contrib.contenttypes.models import ContentType
 from datetime import timedelta
 
-# Customer Registration View
 
 # Customer Registration View
+
 def register(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        first_name = request.POST['first_name']
-        last_name = request.POST['last_name']
-        birthdate = request.POST['birthdate']
-        phone_number = request.POST['phone_number']
-        address = request.POST['address']
-        gender = request.POST['gender']
-        
-        if User.objects.filter(username=username).exists():
-            messages.error(request, 'Username already exists.')
-            return redirect('register')
-        
-        try:
-            user = User.objects.create_user(
-                username=username,
-                password=password,
-                first_name=first_name,
-                last_name=last_name,
-            )
-            Customer.objects.create(
-                user=user,
-                birthdate=birthdate,
-                phone_number=phone_number,
-                address=address,
-                gender=gender
-            )
-            messages.success(request, 'Registration successful. Please log in.')
-            return redirect('login')
-        except IntegrityError:
-            messages.error(request, 'An error occurred during registration. Please try again.')
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        password_confirm = request.POST.get('password_confirm')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        birthdate = request.POST.get('birthdate')
+        phone_number = request.POST.get('phone_number')
+        address = request.POST.get('address')
+        postal_code_id = request.POST.get('postal_code')
+        gender = request.POST.get('gender')
+    
+        # Check parola
+        if password != password_confirm:
+            messages.error(request, "Пароли не совпадают.")
             return redirect('register')
     
-    return render(request, 'orders/register.html')
+        # Check user
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "Пользователь с таким именем уже существует.")
+            return redirect('register')
+    
+        
+        user = User.objects.create_user(username=username, password=password, first_name=first_name, last_name=last_name)
+    
+        
+        try:
+            postal_code = PostalCode.objects.get(id=postal_code_id)
+        except PostalCode.DoesNotExist:
+            messages.error(request, "Выбранный почтовый код не существует.")
+            user.delete()
+            return redirect('register')
+    
+
+        Customer.objects.create(
+            user=user,
+            birthdate=birthdate,
+            phone_number=phone_number,
+            address=address,
+            postal_code=postal_code,
+            gender=gender,
+            total_pizzas_ordered=0,
+            birthday_reward_redeemed=False
+        )
+    
+        messages.success(request, "Регистрация прошла успешно. Вы можете войти в систему.")
+        return redirect('login')  
+    
+
+    postal_codes = PostalCode.objects.all()
+    return render(request, 'orders/register.html', {'postal_codes': postal_codes})
 
 # Customer Login View
 def user_login(request):
@@ -76,6 +92,7 @@ def place_order(request):
         
         # Add pizzas
         pizza_ids = request.POST.getlist('pizzas')
+        #add logic if no pizza then pashel nahui and need to add at least 1 pizza for order
         for pizza_id in pizza_ids:
             pizza = get_object_or_404(Pizza, id=pizza_id)
             OrderItem.objects.create(
@@ -126,9 +143,18 @@ def place_order(request):
                 return redirect('place_order')
 
         # Apply all discounts (loyalty, birthday, and discount code)
-        order.apply_discount()
 
-        messages.success(request, f"Order placed successfully! Your total is {order.get_total_price()}. Estimated delivery time: {order.estimated_delivery_time}")
+        try:
+            order.clean()  # Validate order
+            order.assign_delivery_person() # Try to assing delivery person
+            order.apply_discount()
+        except ValidationError as e:
+            messages.error(request, e.message)
+            order.delete()  # Delete wrong order
+            return redirect('place_order')    
+
+        order.apply_discount()
+        messages.success(request, f"Order placed successfully! Your total is {order.get_total_price()}. Estimated delivery time: {order.estimated_delivery_time}")    
         return redirect('order_confirmation', order_id=order.id)
 
     pizzas = Pizza.objects.all()

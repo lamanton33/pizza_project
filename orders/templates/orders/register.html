@@ -8,7 +8,8 @@
     <form method="post">
         {% csrf_token %}
 
-
+        <label>Username:</label><br>
+        <input type="text" name="username" required><br>
 
         <label>Password:</label><br>
         <input type="password" name="password" required><br>
@@ -31,6 +32,14 @@
 
         <label>Address:</label><br>
         <textarea name="address" required></textarea><br>
+
+        <label>Postal code:</label><br>
+        <select name="postal_code" required>
+            <option value="">Select Postal Code</option>
+            {% for code in postal_codes %}
+                <option value="{{ code.id }}">{{ code.postal_code }}</option>
+            {% endfor %}
+        </select><br> 
 
         <label>Gender:</label><br>
         <select name="gender" required>

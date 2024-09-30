@@ -6,6 +6,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q  # Add this import
 
 
 
@@ -169,7 +170,6 @@ class Order(models.Model):
     estimated_delivery_time = models.DateTimeField(null=True, blank=True)
     delivery_person = models.ForeignKey(DeliveryPerson, on_delete=models.SET_NULL, null=True, blank=True)
     discount_code = models.ForeignKey(DiscountCode, on_delete=models.SET_NULL, null=True, blank=True)
-
     
  
 
@@ -210,8 +210,9 @@ class Order(models.Model):
     def assign_delivery_person(self):
         # Retrieve available delivery persons for the customer's postal code
         available_delivery_persons = DeliveryPerson.objects.filter(
-            assigned_postal_code=self.customer.postal_code,
-            unavailable_until__isnull=True  # Only available persons
+            assigned_postal_code=self.customer.postal_code
+        ).filter(
+            models.Q(unavailable_until__isnull=True) | models.Q(unavailable_until__lte=timezone.now())
         )
 
         if not available_delivery_persons.exists():
@@ -224,8 +225,6 @@ class Order(models.Model):
 
         # Mark the assigned delivery person as unavailable for 30 minutes
         self.delivery_person.mark_unavailable()
-        
-        return self.delivery_person
     
     def clean(self):
         if not any(isinstance(item.item, Pizza) for item in self.items.all()):
