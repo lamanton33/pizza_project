@@ -1,4 +1,3 @@
-<!-- orders/templates/orders/earnings_report.html -->
 {% extends 'orders/base.html' %}
 
 {% block title %}Earnings Report{% endblock %}
@@ -6,8 +5,8 @@
 {% block content %}
     <h2>Earnings Report</h2>
     <form method="get">
-        <label>Region:</label>
-        <input type="text" name="region" value="{{ request.GET.region }}"><br>
+        <label>Postal Code:</label>
+        <input type="text" name="postal_code" value="{{ request.GET.postal_code }}"><br>
 
         <label>Gender:</label>
         <select name="gender">
@@ -16,8 +15,9 @@
             <option value="F" {% if request.GET.gender == 'F' %}selected{% endif %}>Female</option>
         </select><br>
 
-        <label>Age Group:</label>
-        <input type="text" name="age_group" value="{{ request.GET.age_group }}"><br><br>
+        <label>Age Range:</label>
+        <input type="number" name="age_min" value="{{ request.GET.age_min }}" placeholder="Min Age">
+        <input type="number" name="age_max" value="{{ request.GET.age_max }}" placeholder="Max Age"><br><br>
 
         <button type="submit">Filter</button>
     </form>
@@ -29,7 +29,7 @@
                 <th>Total Earnings</th>
                 <th>Number of Orders</th>
                 <th>Total Spent</th>
-                <th>Region</th>
+                <th>Postal Code</th>
                 <th>Customer Gender</th>
                 <th>Customer Age Group</th>
             </tr>
@@ -39,7 +39,7 @@
                     <td>${{ report.total_earnings|floatformat:2 }}</td>
                     <td>{{ report.number_of_orders }}</td>
                     <td>${{ report.total_spent|floatformat:2 }}</td>
-                    <td>{{ report.region }}</td>
+                    <td>{{ report.postal_code.postal_code }}</td>
                     <td>{{ report.get_customer_gender_display }}</td>
                     <td>{{ report.customer_age_group }}</td>
                 </tr>

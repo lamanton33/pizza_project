@@ -237,7 +237,7 @@ class Order(models.Model):
         if self.can_cancel():
             self.status = 'C'
             self.save()
-
+        
     def __str__(self):
         return f"Order #{self.id}"
 
@@ -276,9 +276,11 @@ class EarningsReport(models.Model):
     total_earnings = models.DecimalField(max_digits=10, decimal_places=2)
     number_of_orders = models.IntegerField()
     total_spent = models.DecimalField(max_digits=10, decimal_places=2)
-    region = models.CharField(max_length=100, null=True)
+    postal_code = models.ForeignKey(PostalCode,on_delete=models.SET_NULL, null=True, blank=True)
     customer_gender = models.CharField(max_length=1, choices=[('M', 'Male'), ('F', 'Female')], null=True)
     customer_age_group = models.CharField(max_length=20, null=True)
+
+    
 
     def __str__(self):
         return f"Earnings Report - {self.report_month}"

@@ -153,7 +153,7 @@ def place_order(request):
             order.delete()  # Delete wrong order
             return redirect('place_order')    
 
-        order.apply_discount()
+        # order.apply_discount()
         messages.success(request, f"Order placed successfully! Your total is {order.get_total_price()}. Estimated delivery time: {order.estimated_delivery_time}")    
         return redirect('order_confirmation', order_id=order.id)
 
@@ -161,6 +161,8 @@ def place_order(request):
     drinks = Drink.objects.all()
     desserts = Dessert.objects.all()
     return render(request, 'orders/place_order.html', {'pizzas': pizzas, 'drinks': drinks, 'desserts': desserts})
+
+
 
 # Order Confirmation View
 @login_required
